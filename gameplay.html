@@ -18,7 +18,7 @@
         <main class="game-main">
             <section class="world-panel">
                 <h1>Minecraft World</h1>
-                <p class="world-help">Move with W A S D. Click nearby dirt to break it. Click empty ground to place dirt.</p>
+                <p class="world-help">Move with A and D, jump with W. Press E for crafting. Click blocks to break, click empty cells to place selected inventory blocks.</p>
                 <div id="world" class="world" aria-label="Game world"></div>
             </section>
 
@@ -30,6 +30,12 @@
                     <button type="button" data-action="craft-planks">Planks (4 Wood)</button>
                 </div>
                 <p id="collect-feedback" class="collect-feedback" aria-live="polite">Collect resources and build.</p>
+            </section>
+
+            <section id="craft-menu" class="craft-menu hidden" aria-label="Crafting Table Menu">
+                <h3>Crafting Table</h3>
+                <p>Recipe: 4 PLANKS = 1 CRAFTING_TABLE</p>
+                <button id="craft-table-btn" type="button">Craft Table</button>
             </section>
         </main>
 
