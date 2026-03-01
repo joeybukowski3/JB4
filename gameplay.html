@@ -172,47 +172,73 @@
         sunBall.position.copy(sun.position);
         scene.add(sunBall);
 
-        function makeGrassTexture() {
+        function makeTopGrassTexture() {
             const canvas = document.createElement("canvas");
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 32;
+            canvas.height = 32;
             const ctx = canvas.getContext("2d");
             ctx.fillStyle = "#5fb43a";
-            ctx.fillRect(0, 0, 64, 64);
-            for (let i = 0; i < 480; i += 1) {
-                const x = Math.floor(Math.random() * 64);
-                const y = Math.floor(Math.random() * 64);
-                ctx.fillStyle = `rgb(${35 + Math.floor(Math.random() * 25)}, ${120 + Math.floor(Math.random() * 90)}, ${35 + Math.floor(Math.random() * 25)})`;
+            ctx.fillRect(0, 0, 32, 32);
+            for (let i = 0; i < 220; i += 1) {
+                const x = Math.floor(Math.random() * 32);
+                const y = Math.floor(Math.random() * 32);
+                ctx.fillStyle = `rgb(${30 + Math.floor(Math.random() * 30)}, ${120 + Math.floor(Math.random() * 100)}, ${25 + Math.floor(Math.random() * 30)})`;
                 ctx.fillRect(x, y, 2, 2);
             }
             const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(100, 100);
             tex.magFilter = THREE.NearestFilter;
             tex.minFilter = THREE.NearestFilter;
             return tex;
         }
 
-        const grassTex = makeGrassTexture();
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(100, 100),
-            new THREE.MeshLambertMaterial({ map: grassTex })
-        );
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-        const cubeMat = new THREE.MeshLambertMaterial({ color: 0x6cad3f });
-        for (let x = -10; x <= 10; x += 2) {
-            const b = new THREE.Mesh(cubeGeo, cubeMat);
-            b.position.set(x, 0.5, -8);
-            b.castShadow = true;
-            b.receiveShadow = true;
-            scene.add(b);
+        function makeDirtTexture() {
+            const canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#7b4b2a";
+            ctx.fillRect(0, 0, 32, 32);
+            for (let i = 0; i < 180; i += 1) {
+                const x = Math.floor(Math.random() * 32);
+                const y = Math.floor(Math.random() * 32);
+                const s = 80 + Math.floor(Math.random() * 60);
+                ctx.fillStyle = `rgb(${s + 35}, ${s}, ${s - 20})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.NearestFilter;
+            return tex;
         }
+
+        const grassTop = makeTopGrassTexture();
+        const dirtSide = makeDirtTexture();
+        const grassBlockMats = [
+            new THREE.MeshLambertMaterial({ map: dirtSide }),
+            new THREE.MeshLambertMaterial({ map: dirtSide }),
+            new THREE.MeshLambertMaterial({ map: grassTop }),
+            new THREE.MeshLambertMaterial({ map: dirtSide }),
+            new THREE.MeshLambertMaterial({ map: dirtSide }),
+            new THREE.MeshLambertMaterial({ map: dirtSide }),
+        ];
+
+        const floorSize = 100;
+        const floorBlockGeo = new THREE.BoxGeometry(1, 1, 1);
+        const dummy = new THREE.Object3D();
+        const floorBlocks = new THREE.InstancedMesh(floorBlockGeo, grassBlockMats, floorSize * floorSize);
+        floorBlocks.castShadow = true;
+        floorBlocks.receiveShadow = true;
+
+        let idx = 0;
+        for (let x = 0; x < floorSize; x += 1) {
+            for (let z = 0; z < floorSize; z += 1) {
+                dummy.position.set(x + 0.5, 0.5, z + 0.5);
+                dummy.updateMatrix();
+                floorBlocks.setMatrixAt(idx, dummy.matrix);
+                idx += 1;
+            }
+        }
+        scene.add(floorBlocks);
 
         const keyState = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
         const moveDir = new THREE.Vector3();
@@ -243,7 +269,9 @@
                 controls.moveRight(moveDir.x * 9 * dt);
                 controls.moveForward(-moveDir.z * 9 * dt);
             }
-            controls.getObject().position.y = 5;
+            controls.getObject().position.x = Math.max(0.5, Math.min(99.5, controls.getObject().position.x));
+            controls.getObject().position.z = Math.max(0.5, Math.min(99.5, controls.getObject().position.z));
+            controls.getObject().position.y = 2;
         }
 
         renderer.domElement.addEventListener("click", () => {
@@ -273,7 +301,7 @@
             renderer.render(scene, camera);
         }
 
-        controls.getObject().position.set(0, 5, 0);
+        controls.getObject().position.set(0, 2, 0);
         animate();
     </script>
 </body>
