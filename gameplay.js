@@ -58,6 +58,7 @@ const clock = new THREE.Clock();
 const worldHeights = new Map();
 const blockMeshes = [];
 const raycaster = new THREE.Raycaster();
+const columnBlocks = new Map();
 
 let canJump = false;
 
@@ -148,7 +149,15 @@ function addBlock(x, y, z, topIsGrass) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.blockName = topIsGrass ? "GRASS" : "DIRT";
+    mesh.userData.gridX = x;
+    mesh.userData.gridY = y;
+    mesh.userData.gridZ = z;
     blockMeshes.push(mesh);
+    const key = `${x},${z}`;
+    if (!columnBlocks.has(key)) {
+        columnBlocks.set(key, []);
+    }
+    columnBlocks.get(key).push(mesh);
     scene.add(mesh);
 }
 
@@ -162,6 +171,22 @@ function generateTerrain() {
 
             for (let y = -2; y <= surfaceY; y += 1) {
                 addBlock(x, y, z, y === surfaceY);
+            }
+        }
+    }
+}
+
+function ensureSpawnPlatform() {
+    for (let x = -4; x <= 4; x += 1) {
+        for (let z = -4; z <= 4; z += 1) {
+            const key = `${x},${z}`;
+            const current = worldHeights.get(key);
+            if (typeof current !== "number" || current < 1) {
+                worldHeights.set(key, 1);
+                if (typeof current !== "number" || current < 0) {
+                    addBlock(x, 0, z, false);
+                }
+                addBlock(x, 1, z, true);
             }
         }
     }
@@ -269,10 +294,35 @@ function setupEvents() {
         raycaster.setFromCamera({ x: 0, y: 0 }, camera);
         const hits = raycaster.intersectObjects(blockMeshes, false);
         if (hits.length > 0) {
-            const blockName = hits[0].object.userData.blockName || "BLOCK";
+            const hitMesh = hits[0].object;
+            const blockName = hitMesh.userData.blockName || "BLOCK";
+            const gx = hitMesh.userData.gridX;
+            const gy = hitMesh.userData.gridY;
+            const gz = hitMesh.userData.gridZ;
+
+            scene.remove(hitMesh);
+            const meshIndex = blockMeshes.indexOf(hitMesh);
+            if (meshIndex >= 0) {
+                blockMeshes.splice(meshIndex, 1);
+            }
+
+            const colKey = `${gx},${gz}`;
+            const column = columnBlocks.get(colKey);
+            if (column) {
+                const idx = column.indexOf(hitMesh);
+                if (idx >= 0) {
+                    column.splice(idx, 1);
+                }
+                let maxY = -50;
+                for (let i = 0; i < column.length; i += 1) {
+                    maxY = Math.max(maxY, column[i].userData.gridY);
+                }
+                worldHeights.set(colKey, maxY);
+            }
+
             invSlot1.textContent = blockName;
             invSlot1.title = blockName;
-            hint.textContent = `Collected ${blockName}.`;
+            hint.textContent = `Broke ${blockName}. Added to slot 1.`;
         }
     });
 
@@ -303,7 +353,9 @@ function animate() {
 
 function init() {
     generateTerrain();
+    ensureSpawnPlatform();
     controls.getObject().position.set(0, groundAt(0, 0) + EYE_HEIGHT, 6);
+    camera.rotation.x = -0.22;
     setupEvents();
     animate();
 }
