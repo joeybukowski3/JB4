@@ -16,20 +16,20 @@
         </header>
 
         <main class="game-main">
+            <section class="world-panel">
+                <h1>Minecraft World</h1>
+                <p class="world-help">Move with W A S D. Click nearby dirt to break it. Click empty ground to place dirt.</p>
+                <div id="world" class="world" aria-label="Game world"></div>
+            </section>
+
             <section class="crafting" aria-label="Crafting Area">
-                <h1>Crafting</h1>
+                <h2>Crafting</h2>
                 <div class="craft-grid">
-                    <button type="button">WOOD</button>
-                    <button type="button">STONE</button>
-                    <button type="button">IRON</button>
-                    <button type="button">COAL</button>
-                    <button type="button">SAND</button>
-                    <button type="button">GLASS</button>
-                    <button type="button">WOOL</button>
-                    <button type="button">GOLD</button>
-                    <button type="button">DIAMOND</button>
+                    <button type="button" data-action="collect-wood">Collect Wood</button>
+                    <button type="button" data-action="collect-stone">Collect Stone</button>
+                    <button type="button" data-action="craft-planks">Planks (4 Wood)</button>
                 </div>
-                <p id="collect-feedback" class="collect-feedback" aria-live="polite">Collect a resource to fill your inventory.</p>
+                <p id="collect-feedback" class="collect-feedback" aria-live="polite">Collect resources and build.</p>
             </section>
         </main>
 
@@ -59,50 +59,6 @@
             </div>
         </footer>
     </div>
-    <script>
-        const resourceButtons = Array.from(document.querySelectorAll(".craft-grid button"));
-        const inventorySlots = Array.from(document.querySelectorAll(".inventory-bar .slot"));
-        const collectFeedback = document.getElementById("collect-feedback");
-        let audioContext;
-
-        function playPopSound() {
-            try {
-                audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.type = "square";
-                oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.09);
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.09);
-            } catch (error) {
-                // Ignore sound failures and keep visual feedback.
-            }
-        }
-
-        function collectResource(itemName) {
-            const openSlot = inventorySlots.find((slot) => !slot.dataset.item);
-            if (!openSlot) {
-                collectFeedback.textContent = "Pop! Inventory is full.";
-                playPopSound();
-                return;
-            }
-
-            openSlot.dataset.item = itemName;
-            openSlot.textContent = itemName;
-            openSlot.title = itemName;
-            collectFeedback.textContent = `Pop! Collected ${itemName}.`;
-            playPopSound();
-        }
-
-        resourceButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-                collectResource(button.textContent.trim().toUpperCase());
-            });
-        });
-    </script>
+    <script src="gameplay.js"></script>
 </body>
 </html>
