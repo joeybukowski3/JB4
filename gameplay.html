@@ -19,6 +19,23 @@
             position: fixed;
             inset: 0;
         }
+        #fallback-floor {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 65vh;
+            z-index: 1;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(255, 255, 255, 0.08) 0 10px,
+                    rgba(0, 0, 0, 0.08) 10px 20px
+                ),
+                linear-gradient(180deg, #5ff03a 0%, #2ea327 100%);
+            border-top: 6px solid #6f4b2a;
+            pointer-events: none;
+        }
         .top-ui {
             position: fixed;
             top: 12px;
@@ -99,6 +116,7 @@
 </head>
 <body>
     <div id="game-root"></div>
+    <div id="fallback-floor" aria-hidden="true"></div>
 
     <div class="top-ui">
         <a class="pause-btn" href="index.html">PAUSE</a>
@@ -156,6 +174,7 @@
 
         const controls = new PointerLockControls(camera, renderer.domElement);
         scene.add(controls.getObject());
+        camera.lookAt(0, 0, 35);
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.45));
         const sun = new THREE.DirectionalLight(0xfff2c1, 1.0);
@@ -187,6 +206,8 @@
         // STOP THE FALLING: gravity disabled until standing on the floor.
         let gravityEnabled = false;
         controls.getObject().position.set(0, 5, 0);
+        const fallbackFloor = document.getElementById("fallback-floor");
+        fallbackFloor.style.display = "none";
 
         function onKeyDown(event) {
             if (event.code in key) {
