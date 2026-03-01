@@ -29,9 +29,13 @@ const maxFallSpeed = 500;
 
 const worldData = [];
 const cellElements = [];
+let isMining = false;
 
 const player = document.createElement("div");
 player.className = "player";
+const playerHand = document.createElement("div");
+playerHand.className = "player-hand";
+player.appendChild(playerHand);
 world.appendChild(player);
 
 function showFeedback(message) {
@@ -51,6 +55,25 @@ function playPopSound() {
         gainNode.connect(audioContext.destination);
         oscillator.start();
         oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (error) {
+        // Audio can fail before user interaction; gameplay should continue.
+    }
+}
+
+function playCrackSound() {
+    try {
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.type = "sawtooth";
+        oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(120, audioContext.currentTime + 0.12);
+        gainNode.gain.setValueAtTime(0.07, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.14);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.14);
     } catch (error) {
         // Audio can fail before user interaction; gameplay should continue.
     }
@@ -140,6 +163,17 @@ function renderInventory() {
     if (selectedItem && (inventory.get(selectedItem) || 0) <= 0) {
         selectedItem = null;
     }
+    renderHeldItem();
+}
+
+function renderHeldItem() {
+    playerHand.classList.remove("item-grass", "item-dirt", "item-crafting_table");
+    if (!selectedItem) {
+        playerHand.style.opacity = "0.35";
+        return;
+    }
+    playerHand.style.opacity = "1";
+    playerHand.classList.add(`item-${selectedItem.toLowerCase()}`);
 }
 
 function ensureSelectedPlaceable() {
@@ -338,6 +372,10 @@ function worldCellFromClick(event) {
 }
 
 function handleWorldClick(event) {
+    if (isMining) {
+        return;
+    }
+
     const cellPos = worldCellFromClick(event);
     if (!cellPos) {
         return;
@@ -345,10 +383,19 @@ function handleWorldClick(event) {
 
     const currentType = getCellType(cellPos.row, cellPos.col);
     if (currentType) {
-        setCellType(cellPos.row, cellPos.col, null);
-        addItem(currentType, 1);
-        playPopSound();
-        showFeedback(`Pop! Broke ${currentType}.`);
+        const cell = cellElements[cellPos.row][cellPos.col];
+        isMining = true;
+        cell.classList.add("mining");
+        playCrackSound();
+        showFeedback(`Crack... mining ${currentType}.`);
+        window.setTimeout(() => {
+            cell.classList.remove("mining");
+            setCellType(cellPos.row, cellPos.col, null);
+            addItem(currentType, 1);
+            playPopSound();
+            showFeedback(`Pop! Broke ${currentType}.`);
+            isMining = false;
+        }, 220);
         return;
     }
 
@@ -393,14 +440,14 @@ function setupInputs() {
             return;
         }
 
-        if (["KeyW", "KeyA", "KeyS", "KeyD"].includes(event.code)) {
+        if (["Space", "KeyA", "KeyD"].includes(event.code)) {
             keyState[event.code] = true;
             event.preventDefault();
         }
     });
 
     window.addEventListener("keyup", (event) => {
-        if (["KeyW", "KeyA", "KeyS", "KeyD"].includes(event.code)) {
+        if (["Space", "KeyA", "KeyD"].includes(event.code)) {
             keyState[event.code] = false;
         }
     });
@@ -433,7 +480,7 @@ function update(delta) {
             moveX += 1;
         }
 
-        if (keyState.KeyW && onGround) {
+        if (keyState.Space && onGround) {
             velocityY = jumpVelocity;
             onGround = false;
         }
