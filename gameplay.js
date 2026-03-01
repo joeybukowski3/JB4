@@ -285,6 +285,10 @@ function getGroundAt(x, z) {
     return getCurrentColumnState(Math.round(x), Math.round(z)).height;
 }
 
+function groundAt(x, z) {
+    return getGroundAt(x, z);
+}
+
 function addBlockMesh(group, x, y, z, blockName) {
     let material = dirtMaterial;
     if (blockName === "GRASS") {
@@ -426,6 +430,17 @@ function updateChunkWindow() {
             unloadChunk(key);
         }
     });
+}
+
+function applySpawnFloor() {
+    for (let x = -50; x < 50; x += 1) {
+        for (let z = -50; z < 50; z += 1) {
+            setColumnOverride(x, z, {
+                height: 0,
+                topBlock: "GRASS",
+            });
+        }
+    }
 }
 
 function setMode(nextMode) {
@@ -615,7 +630,9 @@ function animate() {
 
 function init() {
     setMode("SURVIVAL");
-    controls.getObject().position.set(0, getGroundAt(0, 0) + EYE_HEIGHT, 0);
+    applySpawnFloor();
+    window.__groundAt = groundAt;
+    controls.getObject().position.set(0, 5, 0);
     updateChunkWindow();
     setupEvents();
     animate();

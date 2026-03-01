@@ -44,6 +44,14 @@
         </div>
     </div>
 
+    <script>
+        window.groundAt = function groundAt(x, z) {
+            if (typeof window.__groundAt === "function") {
+                return window.__groundAt(x, z);
+            }
+            return 0;
+        };
+    </script>
     <script type="module" src="gameplay.js"></script>
 </body>
 </html>
