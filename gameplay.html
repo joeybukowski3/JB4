@@ -12,38 +12,39 @@
 <body>
     <div class="game-screen">
         <header class="game-top">
-            <a class="pause-btn" href="index.html">Pause</a>
+            <a class="pause-btn" href="index.html">PAUSE</a>
         </header>
 
         <main class="game-main">
             <section class="crafting" aria-label="Crafting Area">
                 <h1>Crafting</h1>
                 <div class="craft-grid">
-                    <button type="button">Wood</button>
-                    <button type="button">Stone</button>
-                    <button type="button">Iron</button>
-                    <button type="button">Coal</button>
-                    <button type="button">Sand</button>
-                    <button type="button">Glass</button>
-                    <button type="button">Wool</button>
-                    <button type="button">Gold</button>
-                    <button type="button">Diamond</button>
+                    <button type="button">WOOD</button>
+                    <button type="button">STONE</button>
+                    <button type="button">IRON</button>
+                    <button type="button">COAL</button>
+                    <button type="button">SAND</button>
+                    <button type="button">GLASS</button>
+                    <button type="button">WOOL</button>
+                    <button type="button">GOLD</button>
+                    <button type="button">DIAMOND</button>
                 </div>
+                <p id="collect-feedback" class="collect-feedback" aria-live="polite">Collect a resource to fill your inventory.</p>
             </section>
         </main>
 
         <footer class="hud">
             <div class="health-bar" aria-label="Health Bar">
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
-                <span class="heart">♥</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
+                <span class="heart">&#10084;</span>
             </div>
             <div class="inventory-bar" aria-label="Inventory Bar">
                 <div class="slot"></div>
@@ -58,5 +59,50 @@
             </div>
         </footer>
     </div>
+    <script>
+        const resourceButtons = Array.from(document.querySelectorAll(".craft-grid button"));
+        const inventorySlots = Array.from(document.querySelectorAll(".inventory-bar .slot"));
+        const collectFeedback = document.getElementById("collect-feedback");
+        let audioContext;
+
+        function playPopSound() {
+            try {
+                audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.type = "square";
+                oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.09);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.09);
+            } catch (error) {
+                // Ignore sound failures and keep visual feedback.
+            }
+        }
+
+        function collectResource(itemName) {
+            const openSlot = inventorySlots.find((slot) => !slot.dataset.item);
+            if (!openSlot) {
+                collectFeedback.textContent = "Pop! Inventory is full.";
+                playPopSound();
+                return;
+            }
+
+            openSlot.dataset.item = itemName;
+            openSlot.textContent = itemName;
+            openSlot.title = itemName;
+            collectFeedback.textContent = `Pop! Collected ${itemName}.`;
+            playPopSound();
+        }
+
+        resourceButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                collectResource(button.textContent.trim().toUpperCase());
+            });
+        });
+    </script>
 </body>
 </html>
