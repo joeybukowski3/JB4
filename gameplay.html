@@ -3,68 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gameplay - Minecraft World</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <title>Gameplay - Minecraft World 3D</title>
     <link rel="stylesheet" href="gameplay.css">
 </head>
 <body>
-    <div class="game-screen">
-        <header class="game-top">
-            <a class="pause-btn" href="index.html">PAUSE</a>
-        </header>
+    <div id="game-root"></div>
 
-        <main class="game-main">
-            <section class="world-panel">
-                <h1>Minecraft World</h1>
-                <p class="world-help">Move with A and D, jump with Space. Press E for crafting. Click blocks to mine, click empty cells to place selected inventory blocks.</p>
-                <div id="world" class="world" aria-label="Game world"></div>
-            </section>
-
-            <section class="crafting" aria-label="Crafting Area">
-                <h2>Crafting</h2>
-                <div class="craft-grid">
-                    <button type="button" data-action="collect-wood">Collect Wood</button>
-                    <button type="button" data-action="collect-stone">Collect Stone</button>
-                    <button type="button" data-action="craft-planks">Planks (4 Wood)</button>
-                </div>
-                <p id="collect-feedback" class="collect-feedback" aria-live="polite">Collect resources and build.</p>
-            </section>
-
-            <section id="craft-menu" class="craft-menu hidden" aria-label="Crafting Table Menu">
-                <h3>Crafting Table</h3>
-                <p>Recipe: 4 PLANKS = 1 CRAFTING_TABLE</p>
-                <button id="craft-table-btn" type="button">Craft Table</button>
-            </section>
-        </main>
-
-        <footer class="hud">
-            <div class="health-bar" aria-label="Health Bar">
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-                <span class="heart">&#10084;</span>
-            </div>
-            <div class="inventory-bar" aria-label="Inventory Bar">
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-                <div class="slot"></div>
-            </div>
-        </footer>
+    <div id="hud">
+        <a class="pause-btn" href="index.html">PAUSE</a>
+        <div id="hint">Click to lock mouse. Move: W A S D | Jump: Space</div>
     </div>
-    <script src="gameplay.js"></script>
+
+    <div id="crosshair" aria-hidden="true">+</div>
+    <div id="hand" aria-hidden="true"></div>
+
+    <script type="module" src="gameplay.js"></script>
 </body>
 </html>
