@@ -161,17 +161,52 @@
         sun.position.set(80, 100, 40);
         sun.castShadow = true;
         scene.add(sun);
+        const sunBall = new THREE.Mesh(
+            new THREE.SphereGeometry(6, 20, 20),
+            new THREE.MeshBasicMaterial({ color: 0xffee88 })
+        );
+        sunBall.position.set(130, 95, -120);
+        scene.add(sunBall);
+
+        function addCloud(x, y, z) {
+            const cloud = new THREE.Group();
+            const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const parts = [
+                [0, 0, 0, 8],
+                [8, 1, 0, 6],
+                [-8, 1, 0, 6],
+                [0, 2, 5, 5],
+                [0, 1, -5, 5],
+            ];
+            for (let i = 0; i < parts.length; i += 1) {
+                const p = parts[i];
+                const puff = new THREE.Mesh(new THREE.SphereGeometry(p[3], 14, 14), mat);
+                puff.position.set(p[0], p[1], p[2]);
+                cloud.add(puff);
+            }
+            cloud.position.set(x, y, z);
+            scene.add(cloud);
+        }
+        addCloud(20, 70, -80);
+        addCloud(-60, 65, -30);
+        addCloud(70, 60, 40);
 
         // 3D grass world made of many cubes.
         const worldSize = 100;
         const half = worldSize / 2;
         const grassGeo = new THREE.BoxGeometry(1, 1, 1);
         const grassMat = new THREE.MeshLambertMaterial({ color: 0x39ff14 });
+        const dirtGeo = new THREE.BoxGeometry(1, 1, 1);
+        const dirtMat = new THREE.MeshLambertMaterial({ color: 0x7b4b2a });
         const grassCount = worldSize * worldSize;
         const grass = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
+        const dirt = new THREE.InstancedMesh(dirtGeo, dirtMat, grassCount);
         grass.castShadow = true;
         grass.receiveShadow = true;
+        dirt.castShadow = true;
+        dirt.receiveShadow = true;
         scene.add(grass);
+        scene.add(dirt);
 
         const dummy = new THREE.Object3D();
         let idx = 0;
@@ -180,10 +215,14 @@
                 dummy.position.set(x + 0.5, 0.5, z + 0.5);
                 dummy.updateMatrix();
                 grass.setMatrixAt(idx, dummy.matrix);
+                dummy.position.set(x + 0.5, -0.5, z + 0.5);
+                dummy.updateMatrix();
+                dirt.setMatrixAt(idx, dummy.matrix);
                 idx += 1;
             }
         }
         grass.instanceMatrix.needsUpdate = true;
+        dirt.instanceMatrix.needsUpdate = true;
 
         // Controls + gravity.
         const key = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
