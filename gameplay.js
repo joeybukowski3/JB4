@@ -3,6 +3,7 @@ import { PointerLockControls } from "https://unpkg.com/three@0.162.0/examples/js
 
 const root = document.getElementById("game-root");
 const hint = document.getElementById("hint");
+const invSlot1 = document.getElementById("inv-slot-1");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x79c6ff);
@@ -55,6 +56,8 @@ const velocity = new THREE.Vector3();
 const moveDirection = new THREE.Vector3();
 const clock = new THREE.Clock();
 const worldHeights = new Map();
+const blockMeshes = [];
+const raycaster = new THREE.Raycaster();
 
 let canJump = false;
 
@@ -144,6 +147,8 @@ function addBlock(x, y, z, topIsGrass) {
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData.blockName = topIsGrass ? "GRASS" : "DIRT";
+    blockMeshes.push(mesh);
     scene.add(mesh);
 }
 
@@ -258,6 +263,16 @@ function setupEvents() {
     renderer.domElement.addEventListener("click", () => {
         if (!controls.isLocked) {
             controls.lock();
+            return;
+        }
+
+        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+        const hits = raycaster.intersectObjects(blockMeshes, false);
+        if (hits.length > 0) {
+            const blockName = hits[0].object.userData.blockName || "BLOCK";
+            invSlot1.textContent = blockName;
+            invSlot1.title = blockName;
+            hint.textContent = `Collected ${blockName}.`;
         }
     });
 
