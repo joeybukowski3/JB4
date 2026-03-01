@@ -142,11 +142,11 @@
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x79c6ff);
-        scene.fog = new THREE.Fog(0x79c6ff, 20, 160);
+        scene.fog = new THREE.Fog(0x79c6ff, 30, 220);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
-        camera.position.set(0, 0, 0);
-        camera.rotation.x = -0.15;
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+        camera.position.set(0, 5, 0);
+        camera.rotation.x = -0.18;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -157,36 +157,101 @@
         const controls = new PointerLockControls(camera, renderer.domElement);
         scene.add(controls.getObject());
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.45);
-        scene.add(ambient);
-
+        scene.add(new THREE.AmbientLight(0xffffff, 0.45));
         const sun = new THREE.DirectionalLight(0xfff0c2, 0.95);
-        sun.position.set(20, 30, 18);
+        sun.position.set(40, 50, 10);
         sun.castShadow = true;
         scene.add(sun);
 
-        // Emergency floor: one huge bright-green solid box so ground is always visible.
-        const groundSize = 100;
-        const floorBlock = new THREE.Mesh(
-            new THREE.BoxGeometry(groundSize, 4, groundSize),
-            new THREE.MeshLambertMaterial({ color: 0x39ff14 })
+        const worldSize = 100;
+        const half = worldSize / 2;
+
+        // Permanent unbreakable bedrock floor.
+        const bedrock = new THREE.Mesh(
+            new THREE.BoxGeometry(worldSize, 2, worldSize),
+            new THREE.MeshLambertMaterial({ color: 0x2f2f2f })
         );
-        floorBlock.position.set(0, 0, 0);
-        floorBlock.castShadow = true;
-        floorBlock.receiveShadow = true;
-        scene.add(floorBlock);
+        bedrock.position.set(0, 0, 0);
+        bedrock.receiveShadow = true;
+        bedrock.castShadow = true;
+        scene.add(bedrock);
+
+        // Mineable 3D grass blocks on top of bedrock.
+        const grassGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x39ff14 });
+        const grassCount = worldSize * worldSize;
+        const grassMesh = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount);
+        grassMesh.castShadow = true;
+        grassMesh.receiveShadow = true;
+        scene.add(grassMesh);
+
+        const dummy = new THREE.Object3D();
+        const grassAlive = new Array(grassCount).fill(true);
+
+        function indexFromCell(cx, cz) {
+            return (cx + half) * worldSize + (cz + half);
+        }
+
+        function cellFromPosition(x, z) {
+            const cx = Math.max(-half, Math.min(half - 1, Math.floor(x)));
+            const cz = Math.max(-half, Math.min(half - 1, Math.floor(z)));
+            return { cx, cz };
+        }
+
+        for (let x = -half; x < half; x += 1) {
+            for (let z = -half; z < half; z += 1) {
+                const idx = indexFromCell(x, z);
+                dummy.position.set(x + 0.5, 1.5, z + 0.5);
+                dummy.updateMatrix();
+                grassMesh.setMatrixAt(idx, dummy.matrix);
+            }
+        }
+        grassMesh.instanceMatrix.needsUpdate = true;
 
         const key = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
         const move = new THREE.Vector3();
         const vel = new THREE.Vector3(0, 0, 0);
         const clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
+
         const playerEyeHeight = 1.7;
         const gravity = 22;
         const walkSpeed = 8;
-        const floorTopY = floorBlock.position.y + 2;
+        const bedrockTop = bedrock.position.y + 1; // top surface y
 
-        // Start at (0, 5, 0), then gravity lands the player onto the big floor.
         controls.getObject().position.set(0, 5, 0);
+
+        function surfaceYAt(x, z) {
+            const { cx, cz } = cellFromPosition(x, z);
+            const idx = indexFromCell(cx, cz);
+            if (grassAlive[idx]) {
+                return 2; // top of grass block (y center 1.5, height 1)
+            }
+            return bedrockTop; // bedrock always exists
+        }
+
+        function mineAtCrosshair() {
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            const hits = raycaster.intersectObject(grassMesh, false);
+            if (!hits.length) {
+                return;
+            }
+            const hit = hits[0];
+            if (typeof hit.instanceId !== "number") {
+                return;
+            }
+            const id = hit.instanceId;
+            if (!grassAlive[id]) {
+                return;
+            }
+            grassAlive[id] = false;
+            // Move mined grass far below the world so it is effectively removed.
+            dummy.position.set(0, -9999, 0);
+            dummy.updateMatrix();
+            grassMesh.setMatrixAt(id, dummy.matrix);
+            grassMesh.instanceMatrix.needsUpdate = true;
+            hint.textContent = "Mined GRASS. Bedrock floor stays forever.";
+        }
 
         function onKeyDown(e) {
             if (e.code in key) {
@@ -194,6 +259,7 @@
                 e.preventDefault();
             }
         }
+
         function onKeyUp(e) {
             if (e.code in key) {
                 key[e.code] = false;
@@ -217,13 +283,15 @@
 
             vel.y -= gravity * dt;
             controls.getObject().position.y += vel.y * dt;
-            const groundedY = floorTopY + playerEyeHeight;
+
+            const floorTop = surfaceYAt(controls.getObject().position.x, controls.getObject().position.z);
+            const groundedY = floorTop + playerEyeHeight;
             if (controls.getObject().position.y <= groundedY) {
                 controls.getObject().position.y = groundedY;
                 vel.y = 0;
             }
 
-            const limit = groundSize / 2 - 1;
+            const limit = half - 0.5;
             controls.getObject().position.x = Math.max(-limit, Math.min(limit, controls.getObject().position.x));
             controls.getObject().position.z = Math.max(-limit, Math.min(limit, controls.getObject().position.z));
         }
@@ -233,11 +301,11 @@
                 controls.lock();
                 return;
             }
-            hint.textContent = "Mouse locked. Floor is active.";
+            mineAtCrosshair();
         });
 
         controls.addEventListener("lock", () => {
-            hint.textContent = "Mouse locked. You're on the green block.";
+            hint.textContent = "Mouse locked. W A S D to move, click to mine grass.";
         });
         controls.addEventListener("unlock", () => {
             hint.textContent = "Click game to lock mouse. W A S D to move.";
