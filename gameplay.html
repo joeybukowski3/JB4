@@ -165,46 +165,28 @@
         sun.castShadow = true;
         scene.add(sun);
 
-        // Giant grass surface block at (0, 0, 0).
-        const groundSize = 20;
-        const grassBlock = new THREE.Mesh(
-            new THREE.BoxGeometry(groundSize, 2, groundSize),
-            new THREE.MeshLambertMaterial({ color: 0x3ea93c })
+        // Emergency floor: one huge bright-green solid box so ground is always visible.
+        const groundSize = 100;
+        const floorBlock = new THREE.Mesh(
+            new THREE.BoxGeometry(groundSize, 4, groundSize),
+            new THREE.MeshLambertMaterial({ color: 0x39ff14 })
         );
-        grassBlock.position.set(0, 0, 0);
-        grassBlock.castShadow = true;
-        grassBlock.receiveShadow = true;
-        grassBlock.userData.breakable = true;
-        grassBlock.userData.blockName = "GRASS";
-        scene.add(grassBlock);
-
-        // Unbreakable bedrock layer below grass.
-        const bedrockBlock = new THREE.Mesh(
-            new THREE.BoxGeometry(groundSize, 2, groundSize),
-            new THREE.MeshLambertMaterial({ color: 0x2b2b2b })
-        );
-        bedrockBlock.position.set(0, -2, 0);
-        bedrockBlock.castShadow = true;
-        bedrockBlock.receiveShadow = true;
-        bedrockBlock.userData.breakable = false;
-        bedrockBlock.userData.blockName = "BEDROCK";
-        scene.add(bedrockBlock);
+        floorBlock.position.set(0, 0, 0);
+        floorBlock.castShadow = true;
+        floorBlock.receiveShadow = true;
+        scene.add(floorBlock);
 
         const key = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
         const move = new THREE.Vector3();
         const vel = new THREE.Vector3(0, 0, 0);
         const clock = new THREE.Clock();
-        const raycaster = new THREE.Raycaster();
-        const mineTargets = [grassBlock, bedrockBlock];
-
         const playerEyeHeight = 1.7;
         const gravity = 22;
         const walkSpeed = 8;
-        const grassTopY = grassBlock.position.y + 1;
-        const bedrockTopY = bedrockBlock.position.y + 1;
+        const floorTopY = floorBlock.position.y + 2;
 
-        // Spawn player on the surface so they can see world + sun immediately.
-        controls.getObject().position.set(0, grassTopY + playerEyeHeight, 0);
+        // Start at (0, 5, 0), then gravity lands the player onto the big floor.
+        controls.getObject().position.set(0, 5, 0);
 
         function onKeyDown(e) {
             if (e.code in key) {
@@ -235,14 +217,13 @@
 
             vel.y -= gravity * dt;
             controls.getObject().position.y += vel.y * dt;
-            const floorTop = scene.children.includes(grassBlock) ? grassTopY : bedrockTopY;
-            const groundedY = floorTop + playerEyeHeight;
+            const groundedY = floorTopY + playerEyeHeight;
             if (controls.getObject().position.y <= groundedY) {
                 controls.getObject().position.y = groundedY;
                 vel.y = 0;
             }
 
-            const limit = groundSize / 2 - 0.5;
+            const limit = groundSize / 2 - 1;
             controls.getObject().position.x = Math.max(-limit, Math.min(limit, controls.getObject().position.x));
             controls.getObject().position.z = Math.max(-limit, Math.min(limit, controls.getObject().position.z));
         }
@@ -252,24 +233,7 @@
                 controls.lock();
                 return;
             }
-
-            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-            const hits = raycaster.intersectObjects(mineTargets, false);
-            if (hits.length === 0) {
-                return;
-            }
-
-            const target = hits[0].object;
-            if (target.userData.breakable) {
-                scene.remove(target);
-                const i = mineTargets.indexOf(target);
-                if (i >= 0) {
-                    mineTargets.splice(i, 1);
-                }
-                hint.textContent = "Mined GRASS. Bedrock below is still solid.";
-            } else {
-                hint.textContent = "BEDROCK is unbreakable.";
-            }
+            hint.textContent = "Mouse locked. Floor is active.";
         });
 
         controls.addEventListener("lock", () => {
