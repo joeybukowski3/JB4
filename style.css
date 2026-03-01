@@ -65,8 +65,11 @@ h1 {
     gap: 14px;
 }
 
-.menu-buttons button {
+.menu-buttons button,
+.menu-buttons .menu-btn {
     width: 100%;
+    display: inline-block;
+    text-decoration: none;
     border: 4px solid #1f1f1f;
     border-top-color: #d6d6d6;
     border-left-color: #d6d6d6;
@@ -80,11 +83,13 @@ h1 {
     cursor: pointer;
 }
 
-.menu-buttons button:hover {
+.menu-buttons button:hover,
+.menu-buttons .menu-btn:hover {
     background: linear-gradient(180deg, #b0b7a0 0%, #868d77 100%);
 }
 
-.menu-buttons button:active {
+.menu-buttons button:active,
+.menu-buttons .menu-btn:active {
     transform: translateY(2px);
 }
 
@@ -106,7 +111,8 @@ footer {
             0 10px 0 var(--pixel-shadow);
     }
 
-    .menu-buttons button {
+    .menu-buttons button,
+    .menu-buttons .menu-btn {
         padding: 14px 10px;
     }
 }
