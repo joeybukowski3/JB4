@@ -1,22 +1,112 @@
-body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    margin: 0;
-    text-align: center;
+:root {
+    --grass-top: #6bbf36;
+    --grass-deep: #3f8d2d;
+    --dirt-light: #8f5b33;
+    --dirt-dark: #5c3b1f;
+    --stone: #2a2a2a;
+    --stone-light: #4b4b4b;
+    --pixel-shadow: #111111;
+    --text: #f8f5df;
 }
 
-main {
-    flex: 1;
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    font-family: "Press Start 2P", monospace;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.08), transparent 35%),
+        repeating-linear-gradient(
+            45deg,
+            rgba(0, 0, 0, 0.12) 0 8px,
+            rgba(0, 0, 0, 0.03) 8px 16px
+        ),
+        linear-gradient(180deg, var(--grass-top) 0%, var(--grass-deep) 40%, var(--dirt-light) 40%, var(--dirt-dark) 100%);
+}
+
+.start-screen {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.menu-panel {
+    width: min(760px, 100%);
+    padding: 32px 28px;
+    text-align: center;
+    background:
+        linear-gradient(180deg, #6ea23c 0%, #4f8c2e 40%, #8d582f 40%, #6d431f 100%);
+    border: 6px solid var(--stone);
+    box-shadow:
+        0 0 0 4px var(--stone-light),
+        0 14px 0 var(--pixel-shadow);
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(1.2rem, 3.3vw, 2rem);
+    letter-spacing: 1px;
+    text-shadow:
+        3px 3px 0 var(--pixel-shadow),
+        -1px -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.menu-buttons {
+    margin-top: 28px;
+    display: grid;
+    gap: 14px;
+}
+
+.menu-buttons button {
+    width: 100%;
+    border: 4px solid #1f1f1f;
+    border-top-color: #d6d6d6;
+    border-left-color: #d6d6d6;
+    border-radius: 0;
+    background: linear-gradient(180deg, #9fa58f 0%, #757a66 100%);
+    color: #ffffff;
+    font: inherit;
+    font-size: clamp(0.7rem, 2vw, 0.95rem);
+    padding: 16px 14px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.menu-buttons button:hover {
+    background: linear-gradient(180deg, #b0b7a0 0%, #868d77 100%);
+}
+
+.menu-buttons button:active {
+    transform: translateY(2px);
 }
 
 footer {
-    padding: 1rem;
-    background-color: #f1f1f1;
-    border-top: 1px solid #ddd;
+    text-align: center;
+    padding: 0.9rem 1rem 1.1rem;
+    color: #f2e8cf;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 3px solid rgba(0, 0, 0, 0.45);
+    font-size: 0.65rem;
+}
+
+@media (max-width: 520px) {
+    .menu-panel {
+        padding: 24px 16px;
+        border-width: 4px;
+        box-shadow:
+            0 0 0 3px var(--stone-light),
+            0 10px 0 var(--pixel-shadow);
+    }
+
+    .menu-buttons button {
+        padding: 14px 10px;
+    }
 }
