@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gameplay - Simple Floor Fix</title>
+    <title>Gameplay - 3D Blocks</title>
     <style>
         * { box-sizing: border-box; }
         html, body {
@@ -12,41 +12,13 @@
             height: 100%;
             overflow: hidden;
             font-family: Verdana, Arial, sans-serif;
-            background: #1e2228;
+            background: #7ec6ff;
             color: #fff;
         }
 
-        .world {
+        #game-root {
             position: fixed;
             inset: 0;
-        }
-
-        .grass-floor {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 70vh;
-            background:
-                repeating-linear-gradient(
-                    45deg,
-                    rgba(255, 255, 255, 0.08) 0 10px,
-                    rgba(0, 0, 0, 0.08) 10px 20px
-                ),
-                linear-gradient(180deg, #66c343 0%, #2d8b2f 100%);
-            border-top: 8px solid #8f5f35;
-        }
-
-        .character {
-            position: absolute;
-            width: 34px;
-            height: 34px;
-            left: 50%;
-            bottom: 70vh;
-            transform: translate(-50%, 50%);
-            background: linear-gradient(180deg, #51eb69 0%, #2eaf45 100%);
-            border: 3px solid #0e5f1f;
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.25);
         }
 
         .top-ui {
@@ -75,6 +47,19 @@
             font-size: 12px;
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9500;
+            font-size: 28px;
+            color: #fff;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            user-select: none;
         }
 
         .hud-bottom {
@@ -123,15 +108,14 @@
     </style>
 </head>
 <body>
-    <main class="world">
-        <div class="grass-floor" aria-label="Grass Floor"></div>
-        <div class="character" aria-label="Player"></div>
-    </main>
+    <div id="game-root"></div>
 
     <div class="top-ui">
         <a class="pause-btn" href="index.html">PAUSE</a>
-        <div class="hint">Simple Floor Mode active.</div>
+        <div id="hint" class="hint">Click the game to lock mouse. Move with W A S D.</div>
     </div>
+
+    <div id="crosshair" aria-hidden="true">+</div>
 
     <div class="hud-bottom">
         <div class="hearts" aria-label="Health Bar">
@@ -158,5 +142,181 @@
             <div class="slot"></div>
         </div>
     </div>
+
+    <script type="module">
+        import * as THREE from "https://unpkg.com/three@0.162.0/build/three.module.js";
+        import { PointerLockControls } from "https://unpkg.com/three@0.162.0/examples/jsm/controls/PointerLockControls.js";
+
+        const root = document.getElementById("game-root");
+        const hint = document.getElementById("hint");
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7ec6ff);
+        scene.fog = new THREE.Fog(0x7ec6ff, 40, 180);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
+        camera.position.set(0, 2, 0);
+        camera.rotation.x = -0.18;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        root.appendChild(renderer.domElement);
+
+        const controls = new PointerLockControls(camera, renderer.domElement);
+        scene.add(controls.getObject());
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+        scene.add(ambient);
+
+        const sun = new THREE.DirectionalLight(0xfff1c2, 0.95);
+        sun.position.set(40, 60, 30);
+        sun.castShadow = true;
+        scene.add(sun);
+
+        const sunBall = new THREE.Mesh(
+            new THREE.SphereGeometry(3, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffe789 })
+        );
+        sunBall.position.copy(sun.position);
+        scene.add(sunBall);
+
+        function makeGrassTopTexture() {
+            const c = document.createElement("canvas");
+            c.width = 32;
+            c.height = 32;
+            const ctx = c.getContext("2d");
+            ctx.fillStyle = "#5fb43a";
+            ctx.fillRect(0, 0, 32, 32);
+            for (let i = 0; i < 220; i += 1) {
+                const x = Math.floor(Math.random() * 32);
+                const y = Math.floor(Math.random() * 32);
+                ctx.fillStyle = `rgb(${30 + Math.floor(Math.random() * 25)}, ${120 + Math.floor(Math.random() * 95)}, ${30 + Math.floor(Math.random() * 25)})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+            const t = new THREE.CanvasTexture(c);
+            t.magFilter = THREE.NearestFilter;
+            t.minFilter = THREE.NearestFilter;
+            return t;
+        }
+
+        function makeDirtTexture() {
+            const c = document.createElement("canvas");
+            c.width = 32;
+            c.height = 32;
+            const ctx = c.getContext("2d");
+            ctx.fillStyle = "#7b4b2a";
+            ctx.fillRect(0, 0, 32, 32);
+            for (let i = 0; i < 170; i += 1) {
+                const x = Math.floor(Math.random() * 32);
+                const y = Math.floor(Math.random() * 32);
+                const s = 80 + Math.floor(Math.random() * 55);
+                ctx.fillStyle = `rgb(${s + 35}, ${s}, ${s - 18})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+            const t = new THREE.CanvasTexture(c);
+            t.magFilter = THREE.NearestFilter;
+            t.minFilter = THREE.NearestFilter;
+            return t;
+        }
+
+        const grassTop = makeGrassTopTexture();
+        const dirt = makeDirtTexture();
+        const grassBlockMaterials = [
+            new THREE.MeshLambertMaterial({ map: dirt }),
+            new THREE.MeshLambertMaterial({ map: dirt }),
+            new THREE.MeshLambertMaterial({ map: grassTop }),
+            new THREE.MeshLambertMaterial({ map: dirt }),
+            new THREE.MeshLambertMaterial({ map: dirt }),
+            new THREE.MeshLambertMaterial({ map: dirt }),
+        ];
+
+        // 3D ground made from many cubes (not a flat plane).
+        const sizeX = 120;
+        const sizeZ = 120;
+        const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+        const floorBlocks = new THREE.InstancedMesh(blockGeo, grassBlockMaterials, sizeX * sizeZ);
+        floorBlocks.castShadow = true;
+        floorBlocks.receiveShadow = true;
+
+        const dummy = new THREE.Object3D();
+        let i = 0;
+        for (let x = 0; x < sizeX; x += 1) {
+            for (let z = 0; z < sizeZ; z += 1) {
+                dummy.position.set(x + 0.5, 0.5, z + 0.5);
+                dummy.updateMatrix();
+                floorBlocks.setMatrixAt(i, dummy.matrix);
+                i += 1;
+            }
+        }
+        scene.add(floorBlocks);
+
+        // Spawn player on top of block at (0, 2, 0).
+        controls.getObject().position.set(0, 2, 0);
+
+        const key = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+        const move = new THREE.Vector3();
+        const clock = new THREE.Clock();
+
+        function onKeyDown(e) {
+            if (e.code in key) {
+                key[e.code] = true;
+                e.preventDefault();
+            }
+        }
+        function onKeyUp(e) {
+            if (e.code in key) {
+                key[e.code] = false;
+            }
+        }
+
+        function update(dt) {
+            if (!controls.isLocked) return;
+
+            move.set(0, 0, 0);
+            if (key.KeyW) move.z -= 1;
+            if (key.KeyS) move.z += 1;
+            if (key.KeyA) move.x -= 1;
+            if (key.KeyD) move.x += 1;
+            if (move.lengthSq() > 0) {
+                move.normalize();
+                controls.moveRight(move.x * 9 * dt);
+                controls.moveForward(-move.z * 9 * dt);
+            }
+
+            controls.getObject().position.x = Math.max(0.5, Math.min(sizeX - 0.5, controls.getObject().position.x));
+            controls.getObject().position.z = Math.max(0.5, Math.min(sizeZ - 0.5, controls.getObject().position.z));
+            controls.getObject().position.y = 2;
+        }
+
+        renderer.domElement.addEventListener("click", () => {
+            if (!controls.isLocked) controls.lock();
+        });
+
+        controls.addEventListener("lock", () => {
+            hint.textContent = "Mouse locked. Use W A S D to walk.";
+        });
+        controls.addEventListener("unlock", () => {
+            hint.textContent = "Click the game to lock mouse. Move with W A S D.";
+        });
+
+        document.addEventListener("keydown", onKeyDown);
+        document.addEventListener("keyup", onKeyUp);
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(0.05, clock.getDelta());
+            update(dt);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
 </body>
 </html>
