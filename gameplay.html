@@ -145,7 +145,8 @@
         scene.fog = new THREE.Fog(0x79c6ff, 20, 160);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
-        camera.position.set(0, 10, 0);
+        camera.position.set(0, 0, 0);
+        camera.rotation.x = -0.15;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -164,30 +165,46 @@
         sun.castShadow = true;
         scene.add(sun);
 
-        // One giant, solid green block at (0, 0, 0).
+        // Giant grass surface block at (0, 0, 0).
         const groundSize = 20;
-        const groundBlock = new THREE.Mesh(
-            new THREE.BoxGeometry(groundSize, 8, groundSize),
+        const grassBlock = new THREE.Mesh(
+            new THREE.BoxGeometry(groundSize, 2, groundSize),
             new THREE.MeshLambertMaterial({ color: 0x3ea93c })
         );
-        groundBlock.position.set(0, 0, 0);
-        groundBlock.castShadow = true;
-        groundBlock.receiveShadow = true;
-        scene.add(groundBlock);
+        grassBlock.position.set(0, 0, 0);
+        grassBlock.castShadow = true;
+        grassBlock.receiveShadow = true;
+        grassBlock.userData.breakable = true;
+        grassBlock.userData.blockName = "GRASS";
+        scene.add(grassBlock);
+
+        // Unbreakable bedrock layer below grass.
+        const bedrockBlock = new THREE.Mesh(
+            new THREE.BoxGeometry(groundSize, 2, groundSize),
+            new THREE.MeshLambertMaterial({ color: 0x2b2b2b })
+        );
+        bedrockBlock.position.set(0, -2, 0);
+        bedrockBlock.castShadow = true;
+        bedrockBlock.receiveShadow = true;
+        bedrockBlock.userData.breakable = false;
+        bedrockBlock.userData.blockName = "BEDROCK";
+        scene.add(bedrockBlock);
 
         const key = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
         const move = new THREE.Vector3();
         const vel = new THREE.Vector3(0, 0, 0);
         const clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
+        const mineTargets = [grassBlock, bedrockBlock];
 
         const playerEyeHeight = 1.7;
         const gravity = 22;
         const walkSpeed = 8;
-        const topOfBlock = groundBlock.position.y + (8 / 2);
-        const groundedY = topOfBlock + playerEyeHeight;
+        const grassTopY = grassBlock.position.y + 1;
+        const bedrockTopY = bedrockBlock.position.y + 1;
 
-        // Spawn player at (0, 10, 0), then gravity makes them land on the block.
-        controls.getObject().position.set(0, 10, 0);
+        // Spawn player on the surface so they can see world + sun immediately.
+        controls.getObject().position.set(0, grassTopY + playerEyeHeight, 0);
 
         function onKeyDown(e) {
             if (e.code in key) {
@@ -218,7 +235,8 @@
 
             vel.y -= gravity * dt;
             controls.getObject().position.y += vel.y * dt;
-
+            const floorTop = scene.children.includes(grassBlock) ? grassTopY : bedrockTopY;
+            const groundedY = floorTop + playerEyeHeight;
             if (controls.getObject().position.y <= groundedY) {
                 controls.getObject().position.y = groundedY;
                 vel.y = 0;
@@ -230,7 +248,28 @@
         }
 
         renderer.domElement.addEventListener("click", () => {
-            if (!controls.isLocked) controls.lock();
+            if (!controls.isLocked) {
+                controls.lock();
+                return;
+            }
+
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            const hits = raycaster.intersectObjects(mineTargets, false);
+            if (hits.length === 0) {
+                return;
+            }
+
+            const target = hits[0].object;
+            if (target.userData.breakable) {
+                scene.remove(target);
+                const i = mineTargets.indexOf(target);
+                if (i >= 0) {
+                    mineTargets.splice(i, 1);
+                }
+                hint.textContent = "Mined GRASS. Bedrock below is still solid.";
+            } else {
+                hint.textContent = "BEDROCK is unbreakable.";
+            }
         });
 
         controls.addEventListener("lock", () => {
