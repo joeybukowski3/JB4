@@ -44,6 +44,19 @@ canvas {
     letter-spacing: 0.04em;
 }
 
+#mode-btn {
+    width: fit-content;
+    color: #fff;
+    background: linear-gradient(180deg, #6ea1d0 0%, #436888 100%);
+    border: 3px solid #1d1d1d;
+    border-top-color: #cde4f8;
+    border-left-color: #cde4f8;
+    padding: 8px 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+
 #hint {
     padding: 8px 10px;
     font-size: 12px;
